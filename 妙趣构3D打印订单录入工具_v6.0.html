@@ -1,0 +1,1753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>妙趣构3D打印订单录入 v6.0</title>
+<script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+  @import url('https://fonts.loli.net/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+  :root{--bg:#0d0d12;--surface:#16151e;--surface2:#1e1d2a;--border:#2d2b3d;--text:#eae8f0;--text2:#9590a8;--accent:#e84393;--accent2:#a855f7;--accent3:#06b6d4;--glow:rgba(232,67,147,.12);--glow2:rgba(168,85,247,.1);--red:#ff6b6b;--orange:#ffa94d;--blue:#74b9ff;--gradient:linear-gradient(135deg,#e84393,#a855f7,#06b6d4)}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 15% 15%,rgba(232,67,147,.06) 0%,transparent 50%),radial-gradient(ellipse at 85% 85%,rgba(6,182,212,.04) 0%,transparent 50%),radial-gradient(ellipse at 50% 50%,rgba(168,85,247,.03) 0%,transparent 60%);z-index:0;pointer-events:none}
+  .app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:28px 20px}
+  .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+  .header-left{display:flex;align-items:center;gap:14px}
+  .logo{width:44px;height:44px;background:linear-gradient(135deg,var(--accent),var(--blue));border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:var(--bg)}
+  .header h1{font-size:22px;font-weight:700;letter-spacing:-.5px}
+  .header h1 span{color:var(--accent)}
+  .header-sub{font-size:12px;color:var(--text2);margin-top:2px}
+  .header-right{display:flex;gap:10px}
+  .btn{padding:9px 18px;border-radius:10px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+  .btn-ghost{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+  .btn-primary{background:var(--gradient);color:#fff}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(232,67,147,.3)}
+  .btn-danger{background:transparent;color:var(--red);border:1px solid rgba(255,107,107,.3)}
+  .btn-danger:hover{background:rgba(255,107,107,.1)}
+  .btn-sm{padding:6px 14px;font-size:12px;border-radius:8px}
+  .api-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .api-bar label{font-size:12px;color:var(--text2);white-space:nowrap;font-weight:500}
+  .api-bar input[type="password"]{flex:1;min-width:200px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:monospace;outline:none}
+  .api-bar input:focus{border-color:var(--accent2);box-shadow:0 0 0 3px var(--glow2)}
+  .api-bar select{padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;outline:none}
+  .api-bar .status{font-size:12px;padding:4px 10px;border-radius:20px;font-weight:600}
+  .status-off{background:rgba(255,107,107,.15);color:var(--red)}
+  .status-on{background:rgba(0,212,170,.15);color:var(--accent)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;transition:border-color .3s}
+  .card:hover{border-color:rgba(232,67,147,.25)}
+  .card-title{font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .card-title .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  .field{margin-bottom:14px}
+  .field:last-child{margin-bottom:0}
+  .field label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+  .field input,.field select{width:100%;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:13px;font-family:inherit;transition:all .2s;outline:none}
+  .field input:focus,.field select:focus{border-color:var(--accent2);box-shadow:0 0 0 3px var(--glow2)}
+  .field select{cursor:pointer}
+  .field select option{background:var(--surface2);color:var(--text)}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .upload-zone{border:2px dashed var(--border);border-radius:11px;padding:16px;text-align:center;cursor:pointer;transition:all .3s;position:relative;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+  .upload-zone:hover{border-color:var(--accent3);background:rgba(6,182,212,.1)}
+  .upload-zone:focus-within{border-color:var(--accent2);box-shadow:0 0 0 3px var(--glow2)}
+  .upload-zone.has-image{padding:6px;border-style:solid;border-color:var(--accent)}
+  .upload-zone .icon{font-size:24px;opacity:.5}
+  .upload-zone .hint{font-size:11px;color:var(--text2)}
+  .upload-zone img{max-width:100%;max-height:180px;border-radius:7px;object-fit:contain}
+  .upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .upload-zone .remove-btn{position:absolute;top:6px;right:6px;background:rgba(255,107,107,.9);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:12px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:2}
+  .upload-zone.has-image .remove-btn{display:flex}
+  .upload-zone.has-image .icon,.upload-zone.has-image .hint{display:none}
+  .recognize-hint{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:var(--accent);padding:3px 12px;border-radius:20px;font-size:11px;font-weight:600;pointer-events:none;opacity:0;transition:opacity .2s}
+  .upload-zone.has-image .recognize-hint{opacity:1}
+  .actions-stack{display:flex;flex-direction:column;gap:10px}
+  .tip-box{margin-top:14px;padding:12px;background:var(--surface2);border-radius:10px;font-size:11px;color:var(--text2);line-height:1.9}
+  .history-section{grid-column:1/-1}
+  .history-table{width:100%;border-collapse:collapse;font-size:12px}
+  .history-table th{text-align:left;padding:9px 10px;background:var(--surface2);color:var(--text2);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+  .history-table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;cursor:pointer}
+  .history-table tr:hover td{background:rgba(168,85,247,.06)}
+  .history-table .thumb{width:36px;height:36px;border-radius:5px;object-fit:cover;background:var(--surface2)}
+  .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600}
+  .badge-yes{background:rgba(232,67,147,.15);color:var(--accent)}
+  .badge-no{background:rgba(255,107,107,.15);color:var(--red)}
+  .badge-pending{background:rgba(255,169,77,.15);color:var(--orange)}
+  .empty-state{text-align:center;padding:36px;color:var(--text2);font-size:13px}
+  .loading-overlay{position:fixed;inset:0;background:rgba(15,17,23,.85);z-index:100;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+  .loading-overlay.show{display:flex}
+  .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent3);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading-text{font-size:14px;color:var(--text2)}
+  .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--accent2);color:var(--accent2);padding:10px 22px;border-radius:11px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:all .4s cubic-bezier(.16,1,.3,1);pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.error{border-color:var(--red);color:var(--red)}
+
+  /* Detail Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:center;justify-content:center}
+  .modal-overlay.show{display:flex}
+  .modal{background:#fff;border-radius:16px;width:90%;max-width:800px;max-height:85vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid #e5e7eb}
+  .modal-header h2{font-size:18px;font-weight:700;color:#1f2937}
+  .modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:#9ca3af;padding:4px 8px;border-radius:8px}
+  .modal-close:hover{background:#f3f4f6;color:#374151}
+  .modal-body{padding:24px;overflow-x:auto}
+  .detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0}
+  .detail-row{display:flex;flex-direction:column;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden}
+  .detail-label{padding:8px 12px;background:#f9fafb;font-size:11px;font-weight:600;color:#6b7280;text-align:center}
+  .detail-value{padding:10px 12px;font-size:13px;color:#1f2937;text-align:center;min-height:48px;display:flex;align-items:center;justify-content:center}
+  .detail-value img{max-width:140px;max-height:100px;border-radius:6px;border:1px solid #e5e7eb}
+  .detail-value a{color:var(--accent2);word-break:break-all;font-size:11px}
+  .detail-value img{cursor:zoom-in}
+  .zoom-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;display:none;align-items:center;justify-content:center;cursor:zoom-out}
+  .zoom-overlay.show{display:flex}
+  .zoom-overlay img{max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 40px rgba(0,0,0,.5)}
+  .detail-full{grid-column:1/-1}
+
+  /* Price Calculator Modal */
+  .calc-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:400;display:none;align-items:center;justify-content:center;padding:20px}
+  .calc-overlay.show{display:flex}
+  .calc-modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:720px;max-height:90vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);display:flex;flex-direction:column}
+  .calc-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+  .calc-header h2{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .calc-header h2 span{font-size:18px}
+  .calc-close{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;transition:color .2s}
+  .calc-close:hover{color:var(--accent)}
+  .calc-body{flex:1;overflow-y:auto;padding:16px 18px}
+
+  /* Horizontal grid layout */
+  .calc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .calc-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .calc-card-title{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:5px}
+  .calc-label{font-size:10px;color:var(--text2);margin-bottom:4px}
+  .calc-input{width:100%;padding:7px 9px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border-color .2s}
+  .calc-input:focus{border-color:var(--accent2);box-shadow:0 0 0 3px var(--glow2)}
+  .calc-select{width:100%;padding:7px 9px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-family:inherit;cursor:pointer;outline:none}
+  .calc-select option{background:var(--surface2)}
+  .calc-value-tag{display:inline-block;font-size:12px;color:var(--text2);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;min-width:60px;text-align:center}
+  .calc-value-highlight{font-size:13px;font-weight:700;color:var(--accent2)}
+
+  /* Result card */
+  .calc-result-card{grid-column:1/-1;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .calc-result-rows{display:grid;grid-template-columns:repeat(3,1fr) 1fr;gap:8px;margin-bottom:10px}
+  .calc-result-item{text-align:center}
+  .calc-result-item .label{font-size:10px;color:var(--text2);margin-bottom:3px}
+  .calc-result-item .value{font-size:13px;font-weight:600;color:var(--text)}
+  .calc-result-total{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--gradient);border-radius:10px}
+  .calc-result-total .label{font-size:12px;font-weight:600;color:rgba(255,255,255,.8)}
+  .calc-result-total .value{font-size:22px;font-weight:900;color:#fff}
+  .calc-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0}
+  .calc-btn{padding:10px 20px;border-radius:10px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+  .calc-btn-cancel{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+  .calc-btn-cancel:hover{border-color:var(--accent2)}
+  .calc-btn-confirm{background:#00c896;color:#fff;border:none}
+  .calc-btn-confirm:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,200,150,.35)}
+
+  /* Settings Panel */
+  .settings-panel{position:absolute;top:0;right:0;bottom:0;width:300px;background:var(--surface);border-left:1px solid var(--border);border-radius:0 16px 16px 0;padding:20px;overflow-y:auto;display:none;flex-direction:column;gap:14px;z-index:5;box-shadow:-4px 0 20px rgba(0,0,0,.3)}
+  .settings-panel.show{display:flex}
+  .settings-title{font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .settings-title button{background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;padding:0}
+  .settings-title button:hover{color:var(--accent)}
+  .settings-group{border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+  .settings-group-title{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+  .settings-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .settings-row span{font-size:12px;color:var(--text);min-width:80px}
+  .settings-row input{width:80px;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;text-align:center}
+  .settings-btn-open{font-size:11px;padding:4px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:4px;width:100%;justify-content:center}
+  .settings-btn-open:hover{border-color:var(--accent2);color:var(--text)}
+  .settings-btn-save{padding:8px;background:var(--gradient);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;width:100%}
+  .settings-btn-save:hover{transform:translateY(-1px)}
+
+  @media(max-width:768px){.grid{grid-template-columns:1fr}.header{flex-direction:column;align-items:flex-start;gap:10px}.detail-grid{grid-template-columns:1fr}.modal{width:95%}}
+</style>
+</head>
+<body>
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div><div class="loading-text" id="loadingText">AI 正在识别图片...</div></div>
+<div class="toast" id="toast"></div>
+<div class="app">
+  <div class="header">
+    <div class="header-left">
+      <img src="logo.png" style="height:80px" alt="MQG Logo">
+      <div><h1>妙趣构<span>3D打印订单录入</span> <span style="font-size:12px;color:var(--text2);font-weight:400;letter-spacing:0">v6.0</span></h1><div class="header-sub">上传截图 · AI 识别 · 自动填表 · 一键导出</div></div>
+    </div>
+    <div class="header-right">
+      </div>
+  </div>
+
+  <div class="api-bar">
+    <label>🤖 AI：</label>
+    <select id="aiProvider" onchange="switchProvider()">
+      <option value="zhipu">智谱 AI（免费·支持图片识别）</option>
+    </select>
+    <label>🔑 Key：</label>
+    <input type="password" id="apiKey" placeholder="粘贴 API Key（仅本地使用）" oninput="saveApiKey()">
+    <span class="status status-off" id="apiStatus">未配置</span>
+    <button class="btn btn-sm btn-ghost" onclick="testApi()">测试</button>
+  </div>
+
+  <div class="grid">
+    <!-- Smart Upload -->
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>智能分类上传</div>
+      <div class="field">
+        <label>一次性上传多张截图，AI 自动分类识别</label>
+        <div class="upload-zone" id="zone-smart" style="min-height:100px">
+          <input type="file" accept="image/*" multiple onchange="handleSmartUpload(this)">
+          <div class="icon">🚀</div>
+          <div class="hint">点击或拖拽上传多张图片（客户截图 + 模型图 + 参数截图）<br>AI 自动识别分类并填入对应区域</div>
+        </div>
+      </div>
+      <div id="smartProgress" style="display:none">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px" id="smartStatus">正在分类识别中...</div>
+        <div style="background:var(--surface2);border-radius:6px;height:6px;overflow:hidden">
+          <div id="smartBar" style="height:100%;background:var(--gradient);border-radius:6px;width:0%;transition:width .3s"></div>
+        </div>
+      </div>
+      <div class="tip-box" style="margin-top:14px">
+        💡 <strong>使用流程</strong><br>
+        1. 选择 AI 平台，输入 API Key 并测试连接<br>
+        2. 在这里批量上传截图（客户 + 模型 + 参数）<br>
+        3. AI 自动分类识别，填入下方各区域<br>
+        4. 补充来源、报价等信息 → 点击「添加到台账」<br>
+        5. 全部录完后 → 点击「导出 Excel」
+      </div>
+    </div>
+
+    <!-- Customer Info -->
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>客户信息</div>
+      <div class="field-row">
+        <div class="field">
+          <label>日期</label>
+          <input type="date" id="orderDate">
+        </div>
+        <div class="field">
+          <label>客户来源</label>
+          <select id="source">
+          <option value="">请选择</option>
+          <option value="抖音" selected>抖音</option>
+          <option value="微信">微信</option>
+          <option value="小红书">小红书</option>
+          <option value="淘宝">淘宝</option>
+          <option value="闲鱼">闲鱼</option>
+          <option value="线下">线下</option>
+          <option value="其他">其他</option>
+        </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>客户昵称</label>
+          <input type="text" id="nickname" placeholder="">
+        </div>
+        <div class="field">
+          <label>微信号 / 账号</label>
+          <input type="text" id="accountId" placeholder="">
+        </div>
+      </div>
+      <div class="field">
+        <label>客户信息截图（也可单独上传）</label>
+        <div class="upload-zone" id="zone-customer">
+          <input type="file" accept="image/*" onchange="handleUpload(this,'customer')">
+          <div class="icon">👤</div>
+          <div class="hint">点击上传客户截图 → AI 自动识别</div>
+          <button class="remove-btn" onclick="removeImage(event,'customer')">✕</button>
+          <div class="recognize-hint">✨ AI 已识别</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model Info -->
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>模型信息</div>
+      <div class="field">
+        <label>模型图片</label>
+        <div class="upload-zone" id="zone-model">
+          <input type="file" accept="image/*" onchange="handleUpload(this,'model')">
+          <div class="icon">🏎️</div>
+          <div class="hint">点击上传模型图片<br><span style="font-size:11px;opacity:.7">（也可上传切片截图，会自动同步到此处）</span></div>
+          <button class="remove-btn" onclick="removeImage(event,'model')">✕</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>模型文件链接</label>
+        <input type="text" id="modelLink" placeholder="网页链接或本地文件路径">
+      </div>
+    </div>
+
+    <!-- Print Params -->
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>打印参数</div>
+      <div class="field">
+        <label>打印参数截图（自动识别重量/时长；若模型图片为空则同步填入）</label>
+        <div class="upload-zone" id="zone-params">
+          <input type="file" accept="image/*" onchange="handleUpload(this,'params')">
+          <div class="icon">⚙️</div>
+          <div class="hint">点击上传切片参数截图 → AI 识别 + 同步到模型图片</div>
+          <button class="remove-btn" onclick="removeImage(event,'params')">✕</button>
+          <div class="recognize-hint">✨ AI 已识别</div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>模型重量（g）</label><input type="number" id="weight" placeholder="例：100" step="0.01"></div>
+        <div class="field"><label>预估打印时长（h）</label><input type="number" id="duration" placeholder="例：100" step="0.01"></div>
+      </div>
+      <div class="field-row3">
+        <div class="field" style="position:relative">
+          <label>预估报价（元）</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" id="price" placeholder="例：50" step="0.01" style="flex:1">
+            <button class="btn btn-sm" style="padding:7px 10px;background:var(--surface2);border:1px solid var(--border);color:var(--accent3);font-size:11px;white-space:nowrap" onclick="openPriceCalc()">🧮 计算</button>
+          </div>
+        </div>
+        <div class="field"><label>实际报价（元）</label><input type="number" id="finalPrice" placeholder="例：45" step="0.01"></div>
+        <div class="field">
+          <label>成交与否</label>
+          <select id="dealStatus">
+            <option value="">待确认</option>
+            <option value="是">是</option>
+            <option value="否">否</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>操作</div>
+      <div class="actions-stack">
+        <button class="btn btn-primary" id="btnAdd" onclick="addOrder()" style="justify-content:center">➕ 添加到台账</button>
+        <button class="btn btn-primary" id="btnUpdate" onclick="updateOrder()" style="justify-content:center;display:none">✏️ 更新记录</button>
+        <button class="btn btn-ghost" id="btnCancel" onclick="cancelEdit()" style="justify-content:center;display:none">↩️ 取消编辑</button>
+        <button class="btn btn-danger" onclick="clearForm()" style="justify-content:center">🗑️ 清空表单</button>
+      </div>
+    </div>
+
+    <!-- File Management -->
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>文件管理</div>
+      <div class="actions-stack">
+        <button class="btn btn-ghost" onclick="importExcel()" style="justify-content:center">📂 导入台账</button>
+        <button class="btn btn-primary" onclick="exportExcel()" style="justify-content:center">💾 导出 Excel</button>
+        <button class="btn btn-danger" onclick="clearAllSavedData()" style="justify-content:center">🗑️ 清空本地数据</button>
+      </div>
+      <div class="tip-box" style="margin-top:14px">
+        💡 记录自动保存在浏览器本地（IndexedDB），关闭后重新打开仍在。<br>
+        💡 导入 Excel 时尝试提取其中的图片一并保存。<br>
+        💡 上传图片会自动压缩（最大边 1200px / JPEG），可存上千条；建议定期导出 Excel 备份。
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="card history-section">
+      <div class="card-title"><span class="dot"></span>本次录入记录 <span id="count" style="color:var(--text2);font-weight:400;font-size:12px"></span></div>
+      <div id="historyContainer"><div class="empty-state">暂无记录</div></div>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeDetail()">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="detailTitle">订单详情</h2>
+        <button class="modal-close" onclick="closeDetail()">✕</button>
+      </div>
+      <div class="modal-body" id="detailBody"></div>
+    </div>
+  </div>
+
+  <!-- Image Zoom -->
+  <div class="zoom-overlay" id="zoomOverlay" onclick="closeZoom()">
+    <img id="zoomImg" src="">
+  </div>
+
+  <!-- Price Calculator Modal -->
+  <div class="calc-overlay" id="calcOverlay" onclick="if(event.target===this)closePriceCalc()">
+    <div class="calc-modal">
+      <div class="calc-header">
+        <h2><span>🧮</span> 智能报价计算</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button onclick="toggleSettingsPanel()" style="padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;font-size:12px" title="设置">⚙️ 参数设置</button>
+          <button class="calc-close" onclick="closePriceCalc()">✕</button>
+        </div>
+      </div>
+      <div class="calc-body">
+        <!-- 三列卡片 + 底部结果 -->
+        <div class="calc-grid">
+
+          <!-- 第一列：机器损耗 -->
+          <div class="calc-card">
+            <div class="calc-card-title">⚙️ 机器损耗</div>
+            <div style="margin-bottom:8px">
+              <div class="calc-label">机器型号</div>
+              <select class="calc-select" id="calcMachineSeries" onchange="onMachineSeriesChange()">
+                <option value="A">拓竹 A 系列</option>
+                <option value="P">拓竹 P 系列</option>
+                <option value="H">拓竹 H 系列</option>
+              </select>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div>
+                <div class="calc-label">机器价格</div>
+                <div class="calc-value-tag" id="showMachinePrice">— 元</div>
+              </div>
+              <div>
+                <div class="calc-label">总工作时长</div>
+                <div class="calc-value-tag" id="showTotalHours">— h</div>
+              </div>
+            </div>
+            <div style="margin-top:8px">
+              <div class="calc-label">本单打印时长（h）</div>
+              <input type="number" class="calc-input" id="calcDuration" placeholder="可自动填入" step="0.01">
+            </div>
+          </div>
+
+          <!-- 第二列：耗材 + 人工 -->
+          <div class="calc-card">
+            <div class="calc-card-title">🧱 耗材费用</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div>
+                <div class="calc-label">耗材类型</div>
+                <select class="calc-select" id="calcFilamentType" onchange="onFilamentTypeChange()">
+                  <option value="plain">普通PLA</option>
+                  <option value="bambu">拓竹PLA</option>
+                </select>
+              </div>
+              <div>
+                <div class="calc-label">单价（元/kg）</div>
+                <input type="number" class="calc-input" id="showFilamentPrice" value="45" step="0.01">
+              </div>
+            </div>
+            <div>
+              <div class="calc-label">模型重量（g）</div>
+              <input type="number" class="calc-input" id="calcWeight" placeholder="可自动填入" step="0.01">
+            </div>
+            <div style="margin-top:10px">
+               <div class="calc-card-title">👷 人工费用</div>
+               <div class="calc-label">人工费用（元）</div>
+               <input type="number" class="calc-input" id="calcLabor" placeholder="手动填写" step="0.01">
+             </div>
+             <div style="margin-top:10px">
+               <div class="calc-label">数量（件）</div>
+               <input type="number" class="calc-input" id="calcQuantity" value="1" min="1" step="1">
+             </div>
+           </div>
+
+          <!-- 第三列：系数 -->
+          <div class="calc-card">
+            <div class="calc-card-title">📊 系数调整</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div>
+                <div class="calc-label">数量等级</div>
+                <select class="calc-select" id="calcBatchLevel" onchange="onBatchLevelChange()">
+                  <option value="small">小批量</option>
+                  <option value="medium">中等批量</option>
+                  <option value="large">大批量</option>
+                </select>
+              </div>
+              <div>
+                <div class="calc-label">数量因子</div>
+                <input type="number" class="calc-input" id="calcBatchFactor" placeholder="1.0" step="0.01" oninput="onBatchFactorChange()">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div>
+                <div class="calc-label">难度等级</div>
+                <select class="calc-select" id="calcDifficulty" onchange="onDifficultyChange()">
+                  <option value="simple">简单</option>
+                  <option value="medium">中等</option>
+                  <option value="hard">困难</option>
+                </select>
+              </div>
+              <div>
+                <div class="calc-label">难度因子</div>
+                <input type="number" class="calc-input" id="calcDifficultyFactor" placeholder="1.0" step="0.01" oninput="onDifficultyFactorChange()">
+              </div>
+            </div>
+            <div style="margin-top:10px">
+              <div class="calc-label">系数合计</div>
+              <div class="calc-value-tag calc-value-highlight" id="showTotalFactor">1.00</div>
+            </div>
+          </div>
+
+          <!-- 底部：计算结果 -->
+          <div class="calc-result-card">
+            <div class="calc-result-rows">
+              <div class="calc-result-item">
+                <div class="label">机器损耗</div>
+                <div class="value" id="calcResMachine">—</div>
+              </div>
+              <div class="calc-result-item">
+                <div class="label">电费</div>
+                <div class="value" id="calcResElectric">—</div>
+              </div>
+              <div class="calc-result-item">
+                <div class="label">耗材费用</div>
+                <div class="value" id="calcResFilament">—</div>
+              </div>
+              <div class="calc-result-item">
+                <div class="label">人工费用</div>
+                <div class="value" id="calcResLabor">—</div>
+              </div>
+            </div>
+            <div class="calc-result-total">
+              <span class="label">预估报价</span>
+              <span class="value" id="calcResTotal">— 元</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="calc-footer">
+        <button class="calc-btn calc-btn-cancel" onclick="closePriceCalc()">取消</button>
+        <button class="calc-btn calc-btn-confirm" onclick="confirmPrice()">✓ 确认填入</button>
+      </div>
+    </div>
+
+    <!-- 参数设置面板 -->
+    <div class="settings-panel" id="settingsPanel">
+      <div class="settings-title">
+        <span>⚙️ 参数设置</span>
+        <button onclick="toggleSettingsPanel()">✕</button>
+      </div>
+
+      <!-- 耗材设置 -->
+      <div class="settings-group">
+        <div class="settings-group-title">🧱 耗材单价（元/kg）</div>
+        <div class="settings-row"><span>普通PLA</span><input type="number" id="setFilamentPlain" step="0.01" placeholder="45"></div>
+        <div class="settings-row"><span>拓竹PLA</span><input type="number" id="setFilamentBambu" step="0.01" placeholder="75"></div>
+      </div>
+
+      <!-- 机器设置 -->
+      <div class="settings-group">
+        <div class="settings-group-title">⚙️ 拓竹 A 系列</div>
+        <div class="settings-row"><span>机器价格</span><input type="number" id="setMachinePriceA" step="0.01"></div>
+        <div class="settings-row"><span>总工作时长</span><input type="number" id="setTotalHoursA" step="0.01"></div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-group-title">⚙️ 拓竹 P 系列</div>
+        <div class="settings-row"><span>机器价格</span><input type="number" id="setMachinePriceP" step="0.01"></div>
+        <div class="settings-row"><span>总工作时长</span><input type="number" id="setTotalHoursP" step="0.01"></div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-group-title">⚙️ 拓竹 H 系列</div>
+        <div class="settings-row"><span>机器价格</span><input type="number" id="setMachinePriceH" step="0.01"></div>
+        <div class="settings-row"><span>总工作时长</span><input type="number" id="setTotalHoursH" step="0.01"></div>
+      </div>
+
+      <!-- 数量因子设置 -->
+      <div class="settings-group">
+        <div class="settings-group-title">📦 数量因子</div>
+        <div class="settings-row"><span>小批量</span><input type="number" id="setBatchSmall" step="0.01" placeholder="1.0"></div>
+        <div class="settings-row"><span>中等批量</span><input type="number" id="setBatchMedium" step="0.01" placeholder="0.9"></div>
+        <div class="settings-row"><span>大批量</span><input type="number" id="setBatchLarge" step="0.01" placeholder="0.7"></div>
+      </div>
+
+      <!-- 难度因子设置 -->
+      <div class="settings-group">
+        <div class="settings-group-title">🔥 难度因子</div>
+        <div class="settings-row"><span>简单</span><input type="number" id="setDiffSimple" step="0.01" placeholder="1.0"></div>
+        <div class="settings-row"><span>中等</span><input type="number" id="setDiffMedium" step="0.01" placeholder="1.0"></div>
+        <div class="settings-row"><span>困难</span><input type="number" id="setDiffHard" step="0.01" placeholder="1.0"></div>
+      </div>
+
+      <!-- 电费设置 -->
+      <div class="settings-group">
+        <div class="settings-group-title">⚡ 电费</div>
+        <div class="settings-row"><span>机器功率（W）</span><input type="number" id="setMachinePower" step="1" placeholder="如：120"></div>
+        <div class="settings-row"><span>电价（元/度）</span><input type="number" id="setElectricityPrice" step="0.01" placeholder="如：0.6"></div>
+      </div>
+
+      <button class="settings-btn-save" onclick="saveSettings()">✓ 保存设置</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const PROVIDERS = {
+  zhipu: { url: 'https://open.bigmodel.cn/api/paas/v4/chat/completions', model: 'glm-4v-flash', vision: true }
+};
+
+// Column definition (must match Excel headers)
+const COLS = ['序号','日期','客户截图','客户来源','客户昵称','微信号/账号','模型图片','模型文件','模型重量（g）','预估打印时长（h）','预估报价（元）','成交与否','实际报价（元）'];
+
+let orders = [];
+let importedOrders = [];
+let images = { customer: null, model: null, params: null };
+let editingIndex = -1; // -1 = not editing
+
+// Storage keys
+const STORAGE_ORDERS_KEY = 'mqg_orders';
+const STORAGE_IMPORTED_KEY = 'mqg_imported_orders';
+
+// === IndexedDB Storage Layer ===
+const IDB_DB_NAME = 'mqg_3d_orders';
+const IDB_STORE = 'kv';
+let _idbDbPromise = null;
+
+function idbOpen() {
+  if (_idbDbPromise) return _idbDbPromise;
+  _idbDbPromise = new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+  return _idbDbPromise;
+}
+
+async function idbSet(key, value) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
+async function idbGet(key) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const req = tx.objectStore(IDB_STORE).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function idbDelete(key) {
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
+// === Image Compression ===
+// 上传时把任意 dataUrl 压缩成 JPEG（最大边 1200px，质量 0.82）。
+// 失败/反而变大时返回原图。
+function compressImage(dataUrl, maxSide = 1200, quality = 0.82) {
+  return new Promise((resolve) => {
+    if (!dataUrl || !dataUrl.startsWith('data:image')) { resolve(dataUrl); return; }
+    const img = new Image();
+    img.onload = () => {
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (!w || !h) { resolve(dataUrl); return; }
+      if (Math.max(w, h) > maxSide) {
+        if (w >= h) { h = Math.round(h * maxSide / w); w = maxSide; }
+        else { w = Math.round(w * maxSide / h); h = maxSide; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      try {
+        const out = canvas.toDataURL('image/jpeg', quality);
+        resolve(out.length < dataUrl.length ? out : dataUrl);
+      } catch (e) { resolve(dataUrl); }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+// === Persistence (IndexedDB-backed) ===
+async function saveOrdersToStorage() {
+  try {
+    const serialized = orders.map(o => serializeOrder(o));
+    await idbSet(STORAGE_ORDERS_KEY, serialized);
+  } catch (e) {
+    console.warn('保存订单失败:', e.message);
+    showToast('⚠️ 保存订单失败：' + e.message, true);
+  }
+}
+
+async function saveImportedOrdersToStorage() {
+  try {
+    const serialized = importedOrders.map(o => serializeOrder(o));
+    await idbSet(STORAGE_IMPORTED_KEY, serialized);
+  } catch (e) {
+    console.warn('保存导入记录失败:', e.message);
+  }
+}
+
+// 缓存加载 Promise，防止"用户在加载完成前点添加"导致数据被空数组覆盖
+let _loadStoragePromise = null;
+function loadAllFromStorage() {
+  if (_loadStoragePromise) return _loadStoragePromise;
+  _loadStoragePromise = (async () => {
+    try {
+      let savedOrders = await idbGet(STORAGE_ORDERS_KEY);
+      let savedImported = await idbGet(STORAGE_IMPORTED_KEY);
+
+      // 一次性迁移：旧版本数据在 localStorage，搬到 IndexedDB
+      if (!savedOrders) {
+        const lsOrders = localStorage.getItem(STORAGE_ORDERS_KEY);
+        if (lsOrders) {
+          savedOrders = JSON.parse(lsOrders);
+          await idbSet(STORAGE_ORDERS_KEY, savedOrders);
+          localStorage.removeItem(STORAGE_ORDERS_KEY);
+          console.log('已迁移订单数据 localStorage → IndexedDB');
+        }
+      }
+      if (!savedImported) {
+        const lsImported = localStorage.getItem(STORAGE_IMPORTED_KEY);
+        if (lsImported) {
+          savedImported = JSON.parse(lsImported);
+          await idbSet(STORAGE_IMPORTED_KEY, savedImported);
+          localStorage.removeItem(STORAGE_IMPORTED_KEY);
+          console.log('已迁移导入数据 localStorage → IndexedDB');
+        }
+      }
+
+      if (savedOrders) orders = savedOrders.map(o => deserializeOrder(o));
+      if (savedImported) importedOrders = savedImported.map(o => deserializeOrder(o));
+    } catch (e) {
+      console.warn('从存储加载失败:', e.message);
+    }
+  })();
+  return _loadStoragePromise;
+}
+
+// 将订单对象序列化（图片压缩为缩略图）
+function serializeOrder(o) {
+  const result = { ...o };
+  ['customerImage', 'modelImage', 'paramsImage'].forEach(key => {
+    if (result[key]) {
+      // 图片已压缩，直接存储（实际压缩在上传时做）
+      result[key] = { data: result[key].data, name: result[key].name };
+    }
+  });
+  return result;
+}
+
+// 反序列化，恢复图片对象格式
+function deserializeOrder(o) {
+  const result = { ...o };
+  ['customerImage', 'modelImage', 'paramsImage'].forEach(key => {
+    if (result[key] && typeof result[key] === 'object') {
+      result[key] = { ...result[key], file: null };
+    }
+  });
+  return result;
+}
+
+// === Provider ===
+function getProvider() { return document.getElementById('aiProvider').value; }
+function getProviderConfig() { return PROVIDERS[getProvider()]; }
+function getApiKey() { return document.getElementById('apiKey').value.trim(); }
+function saveApiKey() {
+  const p = getProvider();
+  const keys = JSON.parse(localStorage.getItem('ai_keys') || '{}');
+  keys[p] = document.getElementById('apiKey').value;
+  localStorage.setItem('ai_keys', JSON.stringify(keys));
+}
+function loadApiKey() {
+  const p = getProvider();
+  const keys = JSON.parse(localStorage.getItem('ai_keys') || '{}');
+  if (keys[p]) { document.getElementById('apiKey').value = keys[p]; updateApiStatus(true); }
+}
+function switchProvider() {
+  document.getElementById('apiKey').value = '';
+  updateApiStatus(false);
+  loadApiKey();
+  showToast('已切换到智谱 AI（支持图片识别）');
+}
+function updateApiStatus(ok) {
+  const el = document.getElementById('apiStatus');
+  el.textContent = ok ? '已配置' : '未配置';
+  el.className = 'status ' + (ok ? 'status-on' : 'status-off');
+}
+async function testApi() {
+  const key = getApiKey();
+  if (!key) { showToast('请先输入 API Key', true); return; }
+  const cfg = getProviderConfig();
+  showLoading('测试连接中...');
+  try {
+    const res = await fetch(cfg.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: cfg.model, messages: [{ role: 'user', content: '你好，回复"连接成功"四个字' }] })
+    });
+    if (res.ok) { updateApiStatus(true); showToast('✅ 连接成功！'); }
+    else { const e = await res.json(); showToast('❌ 连接失败：' + (e.error?.message || res.status), true); }
+  } catch (e) { showToast('❌ 网络错误：' + e.message, true); }
+  hideLoading();
+}
+
+// === AI Recognition ===
+async function recognizeImage(imageData, type) {
+  const key = getApiKey();
+  if (!key) { showToast('请先配置 API Key', true); return; }
+  const cfg = getProviderConfig();
+  if (!cfg.vision) { showToast('⚠️ 当前 AI 不支持图片识别', true); return; }
+
+  const prompts = {
+    customer: `这是一张社交软件（微信/抖音等）的用户资料截图。请提取以下两个字段，严格按 JSON 返回：
+
+{"nickname": "...", "account_id": "..."}
+
+字段说明：
+- nickname：页面顶部显示的用户名字。重要：即便昵称只是 ○ ● 等圆圈符号、emoji、点点点、特殊符号、单个字母或纯数字，也要原样照填，不要因为"看着不像名字"就跳过或留空
+- account_id：找到"微信号："/"抖音号："/"账号："等标签后面的 ID 值，精确保留大小写
+
+规则：
+1. 不要把备注名（括号里的）当作昵称，只取原始显示的名字
+2. 不要提取地区、电话、个性签名等无关信息
+3. 只有完全找不到对应字段时才返回空字符串 ""
+4. 严格只返回上述 JSON，不要任何前后说明文字、不要 markdown 代码块`,
+    params: `这是3D打印切片软件截图。提取以下参数，严格按JSON返回：
+
+{"total_weight_g":总耗材重量（克，纯数字）,"total_time_h":总打印时长（小时，纯数字）}
+
+规则：
+1. total_weight_g 取"总计"行的总克数
+2. total_time_h 取所有盘时长之和，换算为小时（如15h6m+2h16m=17.37）
+3. 只返回JSON`
+  };
+
+  showLoading(type === 'customer' ? '🔍 识别客户信息中...' : '🔍 识别打印参数中...');
+
+  try {
+    const base64 = imageData.data.split(',')[1];
+    const res = await fetch(cfg.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({
+        model: cfg.model,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: prompts[type] },
+            { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } }
+          ]
+        }]
+      })
+    });
+
+    if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'API 错误'); }
+    const data = await res.json();
+    const content = data.choices[0].message.content;
+    console.log(`[AI 识别·${type}] 原始返回:`, content);
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('AI 未返回有效数据');
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    console.log(`[AI 识别·${type}] 解析结果:`, parsed);
+
+    if (type === 'customer') {
+      if (parsed.nickname) document.getElementById('nickname').value = parsed.nickname;
+      if (parsed.account_id) document.getElementById('accountId').value = parsed.account_id;
+      showToast('✅ 客户信息已识别');
+    } else if (type === 'params') {
+      if (parsed.total_weight_g) document.getElementById('weight').value = parsed.total_weight_g;
+      if (parsed.total_time_h) document.getElementById('duration').value = parsed.total_time_h;
+      showToast('✅ 打印参数已识别');
+    }
+  } catch (e) {
+    showToast('❌ 识别失败：' + e.message, true);
+  }
+  hideLoading();
+}
+
+// === Smart Upload (batch classify + recognize) ===
+async function handleSmartUpload(input) {
+  const files = Array.from(input.files);
+  if (files.length === 0) return;
+  const key = getApiKey();
+  const cfg = getProviderConfig();
+  if (!key) { showToast('请先配置 API Key', true); return; }
+  if (!cfg.vision) { showToast('⚠️ 当前 AI 不支持图片分类', true); return; }
+
+  const progressEl = document.getElementById('smartProgress');
+  const barEl = document.getElementById('smartBar');
+  const statusEl = document.getElementById('smartStatus');
+  progressEl.style.display = 'block';
+  barEl.style.width = '0%';
+
+  const classifyPrompt = `请判断这张截图属于以下哪种类型，只返回一个英文单词：
+- customer：社交软件用户资料页（微信/抖音等个人主页截图）
+- model：3D打印模型的产品图或渲染图（实物照片、展示图）
+- params：3D打印切片软件的参数截图（包含重量、时长等数据）
+- other：以上都不是
+
+只返回一个词：customer / model / params / other`;
+
+  const results = { customer: null, model: null, params: null };
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    statusEl.textContent = `正在识别第 ${i + 1}/${files.length} 张：${file.name}`;
+    barEl.style.width = `${((i) / files.length) * 100}%`;
+
+    try {
+      const rawDataUrl = await readFileAsDataURL(file);
+      const dataUrl = await compressImage(rawDataUrl);
+      const base64 = dataUrl.split(',')[1];
+
+      // Step 1: Classify
+      const clsRes = await fetch(cfg.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: JSON.stringify({
+          model: cfg.model,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'text', text: classifyPrompt },
+              { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64}` } }
+            ]
+          }]
+        })
+      });
+      if (!clsRes.ok) throw new Error('分类请求失败');
+      const clsData = await clsRes.json();
+      const clsContent = clsData.choices[0].message.content.toLowerCase();
+      const type = clsContent.includes('customer') ? 'customer' :
+                   clsContent.includes('model') ? 'model' :
+                   clsContent.includes('params') ? 'params' : 'other';
+
+      if (type === 'other') {
+        statusEl.textContent = `第 ${i + 1} 张无法分类，跳过`;
+        continue;
+      }
+
+      // Step 2: Check for duplicate type → warn and skip
+      const typeNames = { customer: '客户截图', model: '模型图片', params: '打印参数' };
+      if (results[type]) {
+        statusEl.textContent = `第 ${i + 1} 张 → ${typeNames[type]}（重复，已跳过）⚠️ 请重新上传`;
+        continue;
+      }
+
+      var imgData = { data: dataUrl, name: file.name, file };
+      results[type] = imgData;
+      images[type] = imgData;
+
+      const zone = document.getElementById(`zone-${type}`);
+      zone.classList.add('has-image');
+      let img = zone.querySelector('img');
+      if (!img) { img = document.createElement('img'); zone.insertBefore(img, zone.querySelector('.remove-btn')); }
+      img.src = dataUrl;
+
+      // 切片截图同步到模型图片（仅当模型图片为空时）
+      if (type === 'params' && !images.model) {
+        syncSlicerToModel(imgData);
+      }
+
+      // Step 4: Recognize if customer or params
+      if (type === 'customer' || type === 'params') {
+        await recognizeImage(imgData, type);
+      }
+
+      statusEl.textContent = `第 ${i + 1} 张 → ${typeNames[type]} ✅`;
+    } catch (e) {
+      statusEl.textContent = `第 ${i + 1} 张处理失败：${e.message}`;
+    }
+  }
+
+  barEl.style.width = '100%';
+  statusEl.textContent = `全部完成！处理了 ${files.length} 张图片`;
+  setTimeout(() => { progressEl.style.display = 'none'; }, 3000);
+  showToast(`✅ 已分类 ${files.length} 张图片`);
+  input.value = '';
+}
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// === Upload ===
+function handleUpload(input, type) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const compressed = await compressImage(e.target.result);
+    images[type] = { data: compressed, name: file.name, file };
+    const zone = document.getElementById(`zone-${type}`);
+    zone.classList.add('has-image');
+    let img = zone.querySelector('img');
+    if (!img) { img = document.createElement('img'); zone.insertBefore(img, zone.querySelector('.remove-btn')); }
+    img.src = compressed;
+    // 切片截图同步到模型图片（仅当模型图片为空时）
+    if (type === 'params' && !images.model) {
+      syncSlicerToModel(images[type]);
+    }
+    if ((type === 'customer' || type === 'params') && getApiKey()) {
+      recognizeImage(images[type], type);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// 把切片截图同步到"模型图片"槽位（不覆盖已有模型图）
+function syncSlicerToModel(imgData) {
+  images.model = imgData;
+  const modelZone = document.getElementById('zone-model');
+  modelZone.classList.add('has-image');
+  let mImg = modelZone.querySelector('img');
+  if (!mImg) {
+    mImg = document.createElement('img');
+    modelZone.insertBefore(mImg, modelZone.querySelector('.remove-btn'));
+  }
+  mImg.src = imgData.data;
+}
+
+function removeImage(e, type) {
+  e.stopPropagation(); e.preventDefault();
+  images[type] = null;
+  const zone = document.getElementById(`zone-${type}`);
+  zone.classList.remove('has-image');
+  const img = zone.querySelector('img');
+  if (img) img.remove();
+  zone.querySelector('input[type="file"]').value = '';
+}
+
+// === Form ===
+function getFormData() {
+  return {
+    orderDate: document.getElementById('orderDate').value,
+    source: document.getElementById('source').value,
+    nickname: document.getElementById('nickname').value.trim(),
+    accountId: document.getElementById('accountId').value.trim(),
+    modelLink: document.getElementById('modelLink').value.trim(),
+    weight: document.getElementById('weight').value,
+    duration: document.getElementById('duration').value,
+    price: document.getElementById('price').value,
+    finalPrice: document.getElementById('finalPrice').value,
+    dealStatus: document.getElementById('dealStatus').value,
+    modelImage: images.model,
+    customerImage: images.customer,
+    paramsImage: images.params,
+  };
+}
+
+function validate(d) {
+  if (!d.source) { showToast('请选择客户来源', true); return false; }
+  if (!d.nickname) { showToast('请填写客户昵称', true); return false; }
+  return true;
+}
+
+async function addOrder() {
+  const d = getFormData();
+  if (!validate(d)) return;
+  await loadAllFromStorage(); // 防止加载未完成时空数组覆盖已存数据
+  orders.push(d);
+  saveOrdersToStorage(); // 自动保存到本地存储
+  clearForm();
+  renderHistory();
+  showToast('✅ 已添加到台账（已自动保存）');
+}
+
+function clearForm() {
+  ['orderDate','source','nickname','accountId','modelLink','weight','duration','price','finalPrice'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('dealStatus').value = '';
+  setTodayDate();
+  ['customer','model','params'].forEach(t => removeImage(new Event('click'), t));
+  if (editingIndex !== -1) cancelEdit();
+  showToast('表单已清空');
+}
+
+// === History ===
+function renderHistory() {
+  const c = document.getElementById('historyContainer');
+  const total = importedOrders.length + orders.length;
+  document.getElementById('count').textContent = total > 0 ? `共 ${total} 条` : '';
+  if (total === 0) { c.innerHTML = '<div class="empty-state">暂无记录</div>'; return; }
+
+  let h = `<table class="history-table"><thead><tr><th>序号</th><th>日期</th><th>来源</th><th>昵称</th><th>账号</th><th>模型</th><th>重量</th><th>时长</th><th>报价</th><th>成交</th><th>操作</th></tr></thead><tbody>`;
+  [...importedOrders, ...orders].forEach((o, i) => {
+    const bc = o.dealStatus === '是' ? 'badge-yes' : o.dealStatus === '否' ? 'badge-no' : 'badge-pending';
+    const bt = o.dealStatus || '待确认';
+    const th = o.modelImage ? `<img class="thumb" src="${o.modelImage.data}">` : '—';
+    const imp = i < importedOrders.length;
+    const editing = !imp && editingIndex === (i - importedOrders.length);
+    const rowStyle = editing ? 'background:rgba(168,85,247,.08);' : '';
+    const editBtn = imp ? '' : `<button onclick="event.stopPropagation();editOrder(${i-importedOrders.length})" style="background:none;border:none;color:var(--accent2);cursor:pointer;font-size:12px;font-weight:600;margin-right:6px">编辑</button>`;
+    const delBtn = imp ? '' : `<button onclick="event.stopPropagation();removeOrder(${i-importedOrders.length})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:12px;font-weight:600">删除</button>`;
+    h += `<tr style="${rowStyle}" onclick="showDetail(${i})"><td>${i+1}</td><td>${o.orderDate||'—'}</td><td>${o.source}</td><td>${o.nickname||'—'}</td><td>${o.accountId||'—'}</td><td>${th}</td><td>${o.weight||'—'}</td><td>${o.duration||'—'}</td><td>${o.finalPrice||o.price||'—'}</td><td><span class="badge ${bc}">${bt}</span></td><td>${editBtn}${delBtn}</td></tr>`;
+  });
+  h += '</tbody></table>';
+  c.innerHTML = h;
+}
+
+function removeOrder(i) { orders.splice(i, 1); saveOrdersToStorage(); if (editingIndex === i) cancelEdit(); else if (editingIndex > i) editingIndex--; renderHistory(); showToast('已删除（已保存）'); }
+
+function showDetail(index) {
+  const all = [...importedOrders, ...orders];
+  const o = all[index];
+  if (!o) return;
+
+  document.getElementById('detailTitle').textContent = `订单详情 #${index + 1}`;
+
+  const fields = [
+    ['序号', index + 1],
+    ['日期', o.orderDate || '—'],
+    ['客户来源', o.source || '—'],
+    ['客户昵称', o.nickname || '—'],
+    ['微信号/账号', o.accountId || '—'],
+    ['客户截图', o.customerImage ? `<img src="${o.customerImage.data}" onclick="zoomImage(this.src)">` : '—'],
+    ['模型图片', o.modelImage ? `<img src="${o.modelImage.data}" onclick="zoomImage(this.src)">` : '—'],
+    ['打印参数截图', o.paramsImage ? `<img src="${o.paramsImage.data}" onclick="zoomImage(this.src)">` : '—'],
+    ['模型文件', o.modelLink ? `<a href="${o.modelLink}" target="_blank" style="color:#2B5797;word-break:break-all">${o.modelLink}</a>` : '—'],
+    ['模型重量', o.weight ? o.weight + ' g' : '—'],
+    ['预估打印时长', o.duration ? o.duration + ' h' : '—'],
+    ['预估报价', o.price ? o.price + ' 元' : '—'],
+    ['成交与否', o.dealStatus || '待确认'],
+    ['实际报价', o.finalPrice ? o.finalPrice + ' 元' : '—'],
+  ];
+
+  let html = '<div class="detail-grid">';
+  fields.forEach(([label, value]) => {
+    html += `<div class="detail-row"><div class="detail-label">${label}</div><div class="detail-value">${value}</div></div>`;
+  });
+  html += '</div>';
+
+  document.getElementById('detailBody').innerHTML = html;
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function closeDetail() {
+  document.getElementById('detailModal').classList.remove('show');
+}
+
+function zoomImage(src) {
+  document.getElementById('zoomImg').src = src;
+  document.getElementById('zoomOverlay').classList.add('show');
+}
+
+function closeZoom() {
+  document.getElementById('zoomOverlay').classList.remove('show');
+}
+
+function editOrder(i) {
+  editingIndex = i;
+  const o = orders[i];
+  document.getElementById('orderDate').value = o.orderDate || '';
+  document.getElementById('source').value = o.source || '';
+  document.getElementById('nickname').value = o.nickname || '';
+  document.getElementById('accountId').value = o.accountId || '';
+  document.getElementById('modelLink').value = o.modelLink || '';
+  document.getElementById('weight').value = o.weight || '';
+  document.getElementById('duration').value = o.duration || '';
+  document.getElementById('price').value = o.price || '';
+  document.getElementById('finalPrice').value = o.finalPrice || '';
+  document.getElementById('dealStatus').value = o.dealStatus || '';
+  // Restore all three images
+  ['customer', 'model', 'params'].forEach(type => {
+    const imgKey = type === 'customer' ? 'customerImage' : type === 'params' ? 'paramsImage' : 'modelImage';
+    if (o[imgKey]) {
+      images[type] = o[imgKey];
+      const zone = document.getElementById(`zone-${type}`);
+      zone.classList.add('has-image');
+      let img = zone.querySelector('img');
+      if (!img) { img = document.createElement('img'); zone.insertBefore(img, zone.querySelector('.remove-btn')); }
+      img.src = o[imgKey].data;
+    }
+  });
+  // Toggle buttons
+  document.getElementById('btnAdd').style.display = 'none';
+  document.getElementById('btnUpdate').style.display = 'flex';
+  document.getElementById('btnCancel').style.display = 'flex';
+  renderHistory();
+  showToast('✏️ 正在编辑第 ' + (i + importedOrders.length + 1) + ' 条记录');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function updateOrder() {
+  const d = getFormData();
+  if (!validate(d)) return;
+  await loadAllFromStorage();
+  orders[editingIndex] = d;
+  saveOrdersToStorage(); // 自动保存到本地存储
+  cancelEdit();
+  clearForm();
+  renderHistory();
+  showToast('✅ 记录已更新并保存，表单已清空');
+}
+
+function cancelEdit() {
+  editingIndex = -1;
+  document.getElementById('btnAdd').style.display = 'flex';
+  document.getElementById('btnUpdate').style.display = 'none';
+  document.getElementById('btnCancel').style.display = 'none';
+  renderHistory();
+}
+
+// === Import Excel ===
+async function importExcel() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.xlsx,.xls';
+  input.onchange = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    await loadAllFromStorage(); // 防止加载未完成时被空数组覆盖
+    showLoading('正在读取 Excel...');
+    try {
+      // 读取为 ArrayBuffer 用于 SheetJS（文字数据）
+      const arrayBuffer = await readFileAsArrayBuffer(file);
+      const wb = XLSX.read(arrayBuffer, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      const hi = rows.findIndex(r => r && String(r[0]).trim() === '序号');
+      if (hi < 0) { showToast('未找到表头行', true); return; }
+      const dataRows = rows.slice(hi + 1).filter(r => r && r[1]);
+
+      // 用 ExcelJS 提取图片：getImages() 返回锚定信息，wb2.media[id] 读图片二进制
+      // imageMap 结构：{ [0-based row index]: { [0-based col index]: {data, name} } }
+      let imageMap = {};
+      try {
+        const wb2 = new ExcelJS.Workbook();
+        await wb2.xlsx.load(arrayBuffer);
+        const ws2 = wb2.worksheets[0];
+        if (ws2 && typeof ws2.getImages === 'function') {
+          const images = ws2.getImages();
+          images.forEach(imgRef => {
+            const imgId = +imgRef.imageId;
+            // 兼容多种 ExcelJS API 取图片二进制
+            let media = null;
+            if (typeof wb2.getImage === 'function') {
+              try { media = wb2.getImage(imgId); } catch (_) {}
+            }
+            if (!media && wb2.media) {
+              media = wb2.media[imgId] || (Array.isArray(wb2.media) && wb2.media.find(m => m && m.index === imgId));
+            }
+            if (!media && wb2.model && wb2.model.media) {
+              media = wb2.model.media[imgId] || wb2.model.media.find(m => m && m.index === imgId);
+            }
+            if (!media || !media.buffer) return;
+
+            // 0-based 锚定坐标（优先 nativeRow/nativeCol，回退 col/row 取整）
+            const tl = imgRef.range && imgRef.range.tl;
+            if (!tl) return;
+            const tlRow = (tl.nativeRow !== undefined) ? tl.nativeRow : Math.floor(tl.row || 0);
+            const tlCol = (tl.nativeCol !== undefined) ? tl.nativeCol : Math.floor(tl.col || 0);
+
+            // Uint8Array → base64（分块避免栈溢出）
+            const bytes = (media.buffer instanceof Uint8Array) ? media.buffer : new Uint8Array(media.buffer);
+            let binary = '';
+            const chunk = 0x8000;
+            for (let i = 0; i < bytes.length; i += chunk) {
+              binary += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + chunk, bytes.length)));
+            }
+            const base64 = btoa(binary);
+            const ext = (media.extension || 'png').toLowerCase();
+            const mime = ext === 'jpg' ? 'jpeg' : ext;
+
+            if (!imageMap[tlRow]) imageMap[tlRow] = {};
+            imageMap[tlRow][tlCol] = {
+              data: 'data:image/' + mime + ';base64,' + base64,
+              name: 'image.' + ext
+            };
+          });
+        }
+      } catch (imgErr) {
+        console.warn('提取图片失败:', imgErr && imgErr.message);
+      }
+
+      const validSources = ['抖音','微信','小红书','淘宝','闲鱼','线下','其他'];
+      importedOrders = await Promise.all(dataRows.map(async (r, idx) => {
+        const rowIdx = hi + 1 + idx; // 0-based 行号，对应 ExcelJS nativeRow
+        let customerImage = null, modelImage = null, paramsImage = null;
+        if (imageMap[rowIdx]) {
+          // 0-based 列：C=2（客户截图），G=6（模型图片）；导入时统一压缩
+          if (imageMap[rowIdx][2]) {
+            const c = imageMap[rowIdx][2];
+            customerImage = { data: await compressImage(c.data), name: c.name };
+          }
+          if (imageMap[rowIdx][6]) {
+            const m = imageMap[rowIdx][6];
+            modelImage = { data: await compressImage(m.data), name: m.name };
+          }
+        }
+        const rawSource = r[3];
+        // 空值或非有效来源时默认抖音
+        const source = (rawSource && validSources.includes(String(rawSource).trim())) ? String(rawSource).trim() : '抖音';
+        return {
+          orderDate: r[1]||'', customerImage, source, nickname: r[4]||'', accountId: r[5]||'',
+          modelImage,
+          modelLink: r[7]||'', weight: r[8]||'', duration: r[9]||'',
+          price: r[10]||'', dealStatus: r[11]||'', finalPrice: r[12]||''
+        };
+      }));
+
+      saveImportedOrdersToStorage(); // 保存到本地存储
+      renderHistory();
+      showToast(`✅ 已导入 ${importedOrders.length} 条记录（含图片）`);
+    } catch (err) { showToast('导入失败：' + err.message, true); }
+    hideLoading();
+  };
+  input.click();
+}
+
+function readFileAsArrayBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// === Export Excel with images (ExcelJS) ===
+async function exportExcel() {
+  const all = [...importedOrders, ...orders];
+  if (all.length === 0) { showToast('没有可导出的记录', true); return; }
+
+  showLoading('正在生成 Excel...');
+
+  try {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('订单管理台账');
+
+    ws.columns = [
+      {width:8},{width:14},{width:18},{width:18},{width:22},{width:18},{width:18},
+      {width:40},{width:16},{width:18},{width:16},{width:12},{width:16}
+    ];
+
+    const headerFill = {type:'pattern',pattern:'solid',fgColor:{argb:'FF2B5797'}};
+    const headerFont = {name:'Arial',bold:true,color:{argb:'FFFFFFFF'},size:11};
+    const titleFont = {name:'Arial',bold:true,size:16,color:{argb:'FF1F2937'}};
+    const titleFill = {type:'pattern',pattern:'solid',fgColor:{argb:'FFEAF2FF'}};
+    const subFont = {name:'Arial',size:9,color:{argb:'FF6B7280'},italic:true};
+    const thinBorder = {style:'thin',color:{argb:'FFD9DEE7'}};
+    const borderAll = {top:thinBorder,left:thinBorder,bottom:thinBorder,right:thinBorder};
+    const zebra1 = {type:'pattern',pattern:'solid',fgColor:{argb:'FFFFFFFF'}};
+    const zebra2 = {type:'pattern',pattern:'solid',fgColor:{argb:'FFF2F6FC'}};
+    const centerAlign = {horizontal:'center',vertical:'middle',wrapText:true};
+    const leftAlign = {horizontal:'left',vertical:'middle',wrapText:true};
+
+    // Row 1: Title
+    ws.mergeCells('A1:M1');
+    const r1 = ws.getRow(1); r1.height = 40;
+    r1.getCell(1).value = '3D 打印客户订单管理台账';
+    r1.getCell(1).font = titleFont;
+    r1.getCell(1).fill = titleFill;
+    r1.getCell(1).alignment = {horizontal:'center',vertical:'middle'};
+
+    // Row 2: Subtitle (empty row for spacing)
+    ws.mergeCells('A2:M2');
+    const r2 = ws.getRow(2); r2.height = 10;
+
+    // Row 3: Headers
+    const r3 = ws.getRow(3); r3.height = 48;
+    COLS.forEach((h, i) => {
+      const cell = r3.getCell(i + 1);
+      cell.value = h;
+      cell.font = headerFont;
+      cell.fill = headerFill;
+      cell.alignment = centerAlign;
+      cell.border = borderAll;
+    });
+
+    // Data rows
+    for (let i = 0; i < all.length; i++) {
+      const o = all[i];
+      const rowNum = i + 4;
+      const row = ws.getRow(rowNum);
+      row.height = 28;
+      const fill = i % 2 === 0 ? zebra1 : zebra2;
+
+      const values = [
+        i + 1, o.orderDate || '', '', o.source, o.nickname, o.accountId, '',
+        o.modelLink,
+        o.weight ? parseFloat(o.weight) : '',
+        o.duration ? parseFloat(o.duration) : '',
+        o.price ? parseFloat(o.price) : '',
+        o.dealStatus || '',
+        o.finalPrice ? parseFloat(o.finalPrice) : ''
+      ];
+
+      values.forEach((v, ci) => {
+        const cell = row.getCell(ci + 1);
+        cell.value = v;
+        cell.border = borderAll;
+        cell.fill = fill;
+        cell.alignment = (ci === 8) ? leftAlign : centerAlign;
+        cell.font = {name:'Arial',size:10,color:{argb:'FF000000'}};
+      });
+
+      // Embed customer screenshot in column C (0-based col index = 2)
+      // tl + br + editAs: 'twoCell' 把图片严格嵌入到 C 列对应单元格，随单元格缩放/移动
+      if (o.customerImage) {
+        try {
+          const base64Data = o.customerImage.data.split(',')[1];
+          const m = (o.customerImage.data || '').match(/^data:image\/(\w+);/);
+          const ext = (m && m[1]) || 'png';
+          const imageId = wb.addImage({base64:base64Data,extension:ext});
+          ws.addImage(imageId, {
+            tl: { col: 2, row: rowNum - 1 },   // 单元格 C{rowNum} 左上角
+            br: { col: 3, row: rowNum },       // 单元格 C{rowNum} 右下角（即 D{rowNum+1} 左上角）
+            editAs: 'twoCell'
+          });
+          row.height = 80;
+        } catch (e) { row.getCell(3).value = '[图片失败]'; }
+      }
+
+      // Embed model image in column G (0-based col index = 6)
+      if (o.modelImage) {
+        try {
+          const base64Data = o.modelImage.data.split(',')[1];
+          const m = (o.modelImage.data || '').match(/^data:image\/(\w+);/);
+          const ext = (m && m[1]) || 'png';
+          const imageId = wb.addImage({base64:base64Data,extension:ext});
+          ws.addImage(imageId, {
+            tl: { col: 6, row: rowNum - 1 },   // 单元格 G{rowNum} 左上角
+            br: { col: 7, row: rowNum },       // 单元格 G{rowNum} 右下角
+            editAs: 'twoCell'
+          });
+          row.height = Math.max(row.height, 80);
+        } catch (e) { row.getCell(7).value = '[图片失败]'; }
+      }
+    }
+
+    ws.views = [{state:'frozen',ySplit:3,xSplit:0,topLeftCell:'A4'}];
+    ws.autoFilter = {from:'A3',to:`M${all.length + 3}`};
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = '3D打印客户订单管理台账.xlsx'; a.click();
+    URL.revokeObjectURL(url);
+    showToast('💾 Excel 已导出（含图片）');
+  } catch (e) { showToast('❌ 导出失败：' + e.message, true); }
+  hideLoading();
+}
+
+// === UI ===
+function showLoading(text) { document.getElementById('loadingText').textContent = text||'处理中...'; document.getElementById('loadingOverlay').classList.add('show'); }
+function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function setTodayDate() { document.getElementById('orderDate').value = new Date().toISOString().split('T')[0]; }
+
+loadApiKey();
+setTodayDate();
+loadAllFromStorage().then(renderHistory); // 异步加载 IndexedDB → 渲染历史
+
+async function clearAllSavedData() {
+  if (!confirm('确定要清空所有已保存的记录吗？此操作不可恢复！')) return;
+  await loadAllFromStorage(); // 等加载完再清，避免和初始加载竞态
+  try {
+    await idbDelete(STORAGE_ORDERS_KEY);
+    await idbDelete(STORAGE_IMPORTED_KEY);
+  } catch (e) { console.warn('清空 IDB 失败:', e.message); }
+  // 兜底清掉旧版 localStorage 残留
+  localStorage.removeItem(STORAGE_ORDERS_KEY);
+  localStorage.removeItem(STORAGE_IMPORTED_KEY);
+  orders = [];
+  importedOrders = [];
+  editingIndex = -1;
+  renderHistory();
+  showToast('🗑️ 所有已保存记录已清空');
+}
+
+// ===== Price Calculator =====
+const CALC_KEYS = {
+  filamentPlain: 'calc_filament_plain',    // 普通PLA 单价 元/kg
+  filamentBambu: 'calc_filament_bambu',   // 拓竹PLA 单价 元/kg
+  machinePriceA: 'calc_machine_price_A',  // 拓竹A系列 价格
+  machinePriceP: 'calc_machine_price_P',  // 拓竹P系列 价格
+  machinePriceH: 'calc_machine_price_H',  // 拓竹H系列 价格
+  totalHoursA: 'calc_total_hours_A',      // 拓竹A系列 总时长
+  totalHoursP: 'calc_total_hours_P',      // 拓竹P系列 总时长
+  totalHoursH: 'calc_total_hours_H',      // 拓竹H系列 总时长
+  machinePower: 'calc_machine_power',      // 机器功率 W
+  electricityPrice: 'calc_electricity_price', // 电价 元/度
+  batchSmall: 'calc_batch_small',         // 小批量因子
+  batchMedium: 'calc_batch_medium',       // 中等批量因子
+  batchLarge: 'calc_batch_large',         // 大批量因子
+  diffSimple: 'calc_diff_simple',         // 简单系数
+  diffMedium: 'calc_diff_medium',         // 中等系数
+  diffHard: 'calc_diff_hard',             // 困难系数
+};
+
+const CALC_DEFAULTS = {
+  filamentPlain: 45,
+  filamentBambu: 75,
+  machinePriceA: 0,
+  machinePriceP: 0,
+  machinePriceH: 0,
+  totalHoursA: 0,
+  totalHoursP: 0,
+  totalHoursH: 0,
+  machinePower: 120,
+  electricityPrice: 0.6,
+  batchSmall: 1.0,
+  batchMedium: 0.9,
+  batchLarge: 0.7,
+  diffSimple: 1.0,
+  diffMedium: 1.0,
+  diffHard: 1.0,
+};
+
+function loadCalcDefaults() {
+  const saved = {};
+  for (const [k, storageKey] of Object.entries(CALC_KEYS)) {
+    const v = localStorage.getItem(storageKey);
+    saved[k] = v !== null ? parseFloat(v) : CALC_DEFAULTS[k];
+  }
+  return saved;
+}
+
+function saveCalcDefaults(d) {
+  const map = {
+    filamentPlain: CALC_KEYS.filamentPlain, filamentBambu: CALC_KEYS.filamentBambu,
+    machinePriceA: CALC_KEYS.machinePriceA, machinePriceP: CALC_KEYS.machinePriceP, machinePriceH: CALC_KEYS.machinePriceH,
+    totalHoursA: CALC_KEYS.totalHoursA, totalHoursP: CALC_KEYS.totalHoursP, totalHoursH: CALC_KEYS.totalHoursH,
+    machinePower: CALC_KEYS.machinePower, electricityPrice: CALC_KEYS.electricityPrice,
+    batchSmall: CALC_KEYS.batchSmall, batchMedium: CALC_KEYS.batchMedium, batchLarge: CALC_KEYS.batchLarge,
+    diffSimple: CALC_KEYS.diffSimple, diffMedium: CALC_KEYS.diffMedium, diffHard: CALC_KEYS.diffHard,
+  };
+  for (const [k, storageKey] of Object.entries(map)) {
+    if (d[k] !== undefined) localStorage.setItem(storageKey, d[k]);
+  }
+}
+
+function openPriceCalc() {
+  const d = loadCalcDefaults();
+  const series = document.getElementById('calcMachineSeries').value;
+  const priceMap = { A: d.machinePriceA, P: d.machinePriceP, H: d.machinePriceH };
+  const hoursMap = { A: d.totalHoursA, P: d.totalHoursP, H: d.totalHoursH };
+  const filamentPrice = d.filamentPlain;
+
+  document.getElementById('showFilamentPrice').value = filamentPrice;
+  document.getElementById('showMachinePrice').textContent = (priceMap[series] || 0) + ' 元';
+  document.getElementById('showTotalHours').textContent = (hoursMap[series] || 0) + ' h';
+  document.getElementById('calcBatchFactor').value = d.batchSmall;
+  document.getElementById('calcDifficultyFactor').value = d.diffSimple;
+  document.getElementById('showTotalFactor').textContent = (d.batchSmall * d.diffSimple).toFixed(2);
+
+  const weight = document.getElementById('weight').value;
+  const duration = document.getElementById('duration').value;
+  document.getElementById('calcWeight').value = weight;
+  document.getElementById('calcDuration').value = duration;
+
+  document.getElementById('calcLabor').value = '';
+  document.getElementById('calcBatchLevel').value = 'small';
+  document.getElementById('calcDifficulty').value = 'simple';
+
+  updateCalcResult();
+  document.getElementById('calcOverlay').classList.add('show');
+  // close settings panel if open
+  document.getElementById('settingsPanel').classList.remove('show');
+}
+
+function closePriceCalc() {
+  document.getElementById('calcOverlay').classList.remove('show');
+  document.getElementById('settingsPanel').classList.remove('show');
+}
+
+function toggleSettingsPanel() {
+  const panel = document.getElementById('settingsPanel');
+  const isOpen = panel.classList.contains('show');
+  if (!isOpen) {
+    const d = loadCalcDefaults();
+    // 耗材
+    document.getElementById('setFilamentPlain').value = d.filamentPlain;
+    document.getElementById('setFilamentBambu').value = d.filamentBambu;
+    // 机器
+    document.getElementById('setMachinePriceA').value = d.machinePriceA || '';
+    document.getElementById('setTotalHoursA').value = d.totalHoursA || '';
+    document.getElementById('setMachinePriceP').value = d.machinePriceP || '';
+    document.getElementById('setTotalHoursP').value = d.totalHoursP || '';
+    document.getElementById('setMachinePriceH').value = d.machinePriceH || '';
+    document.getElementById('setTotalHoursH').value = d.totalHoursH || '';
+    // 电费
+    document.getElementById('setMachinePower').value = d.machinePower || 120;
+    document.getElementById('setElectricityPrice').value = d.electricityPrice || 0.6;
+    // 数量因子
+    document.getElementById('setBatchSmall').value = d.batchSmall;
+    document.getElementById('setBatchMedium').value = d.batchMedium;
+    document.getElementById('setBatchLarge').value = d.batchLarge;
+    // 难度因子
+    document.getElementById('setDiffSimple').value = d.diffSimple;
+    document.getElementById('setDiffMedium').value = d.diffMedium;
+    document.getElementById('setDiffHard').value = d.diffHard;
+  }
+  panel.classList.toggle('show');
+}
+
+function saveSettings() {
+  const d = {
+    filamentPlain: parseFloat(document.getElementById('setFilamentPlain').value) || 45,
+    filamentBambu: parseFloat(document.getElementById('setFilamentBambu').value) || 75,
+    machinePriceA: parseFloat(document.getElementById('setMachinePriceA').value) || 0,
+    machinePriceP: parseFloat(document.getElementById('setMachinePriceP').value) || 0,
+    machinePriceH: parseFloat(document.getElementById('setMachinePriceH').value) || 0,
+    totalHoursA: parseFloat(document.getElementById('setTotalHoursA').value) || 0,
+    totalHoursP: parseFloat(document.getElementById('setTotalHoursP').value) || 0,
+    totalHoursH: parseFloat(document.getElementById('setTotalHoursH').value) || 0,
+    machinePower: parseFloat(document.getElementById('setMachinePower').value) || 120,
+    electricityPrice: parseFloat(document.getElementById('setElectricityPrice').value) || 0.6,
+    batchSmall: parseFloat(document.getElementById('setBatchSmall').value) || 1.0,
+    batchMedium: parseFloat(document.getElementById('setBatchMedium').value) || 0.9,
+    batchLarge: parseFloat(document.getElementById('setBatchLarge').value) || 0.7,
+    diffSimple: parseFloat(document.getElementById('setDiffSimple').value) || 1.0,
+    diffMedium: parseFloat(document.getElementById('setDiffMedium').value) || 1.0,
+    diffHard: parseFloat(document.getElementById('setDiffHard').value) || 1.0,
+  };
+  saveCalcDefaults(d);
+  // 更新当前选中的因子
+  const batchLevel = document.getElementById('calcBatchLevel').value;
+  const diff = document.getElementById('calcDifficulty').value;
+  const bfMap = { small: d.batchSmall, medium: d.batchMedium, large: d.batchLarge };
+  const dfMap = { simple: d.diffSimple, medium: d.diffMedium, hard: d.diffHard };
+  document.getElementById('calcBatchFactor').value = bfMap[batchLevel] || 1.0;
+  document.getElementById('calcDifficultyFactor').value = dfMap[diff] || 1.0;
+  // 更新耗材类型显示
+  const ft = document.getElementById('calcFilamentType').value;
+  document.getElementById('calcFilamentPrice').value = ft === 'bambu' ? d.filamentBambu : d.filamentPlain;
+  document.getElementById('settingsPanel').classList.remove('show');
+  showToast('✅ 参数已保存');
+}
+
+function onFilamentTypeChange() {
+  const d = loadCalcDefaults();
+  const type = document.getElementById('calcFilamentType').value;
+  const price = type === 'bambu' ? d.filamentBambu : d.filamentPlain;
+  document.getElementById('showFilamentPrice').value = price;
+  updateCalcResult();
+}
+
+function onMachineSeriesChange() {
+  const d = loadCalcDefaults();
+  const series = document.getElementById('calcMachineSeries').value;
+  const priceMap = { A: d.machinePriceA, P: d.machinePriceP, H: d.machinePriceH };
+  const hoursMap = { A: d.totalHoursA, P: d.totalHoursP, H: d.totalHoursH };
+  document.getElementById('showMachinePrice').textContent = (priceMap[series] || 0) + ' 元';
+  document.getElementById('showTotalHours').textContent = (hoursMap[series] || 0) + ' h';
+  updateCalcResult();
+}
+
+function onBatchLevelChange() {
+  const level = document.getElementById('calcBatchLevel').value;
+  const d = loadCalcDefaults();
+  const factorMap = { small: d.batchSmall, medium: d.batchMedium, large: d.batchLarge };
+  document.getElementById('calcBatchFactor').value = factorMap[level] || 1.0;
+  updateTotalFactorDisplay();
+  updateCalcResult();
+}
+
+function onDifficultyChange() {
+  const diff = document.getElementById('calcDifficulty').value;
+  const d = loadCalcDefaults();
+  const factorMap = { simple: d.diffSimple, medium: d.diffMedium, hard: d.diffHard };
+  document.getElementById('calcDifficultyFactor').value = factorMap[diff] || 1.0;
+  updateTotalFactorDisplay();
+  updateCalcResult();
+}
+
+// 切换等级时自动保存当前因子（像机器系列一样记忆）
+function onBatchFactorChange() {
+  const level = document.getElementById('calcBatchLevel').value;
+  const factor = parseFloat(document.getElementById('calcBatchFactor').value) || 1.0;
+  localStorage.setItem(CALC_KEYS[level === 'small' ? 'batchSmall' : level === 'medium' ? 'batchMedium' : 'batchLarge'], factor);
+  updateTotalFactorDisplay();
+  updateCalcResult();
+}
+
+function onDifficultyFactorChange() {
+  const diff = document.getElementById('calcDifficulty').value;
+  const factor = parseFloat(document.getElementById('calcDifficultyFactor').value) || 1.0;
+  localStorage.setItem(CALC_KEYS[diff === 'simple' ? 'diffSimple' : diff === 'medium' ? 'diffMedium' : 'diffHard'], factor);
+  updateTotalFactorDisplay();
+  updateCalcResult();
+}
+
+function updateCalcResult() {
+  const d = loadCalcDefaults();
+  const series = document.getElementById('calcMachineSeries').value;
+  const priceMap = { A: d.machinePriceA, P: d.machinePriceP, H: d.machinePriceH };
+  const hoursMap = { A: d.totalHoursA, P: d.totalHoursP, H: d.totalHoursH };
+  const machinePrice = priceMap[series] || 0;
+  const totalHours = hoursMap[series] || 0;
+  // 从单价输入框读取
+  const filamentPrice = parseFloat(document.getElementById('showFilamentPrice').value) || 0;
+
+  const duration = parseFloat(document.getElementById('calcDuration').value) || 0;
+  const weight = parseFloat(document.getElementById('calcWeight').value) || 0;
+  const quantity = parseInt(document.getElementById('calcQuantity').value) || 1;
+  const labor = parseFloat(document.getElementById('calcLabor').value) || 0;
+  const batchFactor = parseFloat(document.getElementById('calcBatchFactor').value) || 1.0;
+  const diffFactor = parseFloat(document.getElementById('calcDifficultyFactor').value) || 1.0;
+
+  const machineCost = totalHours > 0 ? machinePrice / totalHours * duration : 0;
+  const electricityCost = d.machinePower * duration / 1000 * d.electricityPrice;
+  const filamentCost = weight / 1000 * filamentPrice;
+
+  // 机器损耗、电费、耗材 × 数量，人工不乘数量
+  const machineTotal = machineCost * quantity;
+  const electricTotal = electricityCost * quantity;
+  const filamentTotal = filamentCost * quantity;
+  const unitCost = machineCost + electricityCost + filamentCost;
+  const totalFactor = batchFactor * diffFactor;
+  const total = (unitCost * quantity + labor) * totalFactor;
+
+  document.getElementById('calcResMachine').textContent = '¥' + machineTotal.toFixed(2);
+  document.getElementById('calcResElectric').textContent = '¥' + electricTotal.toFixed(2);
+  document.getElementById('calcResFilament').textContent = '¥' + filamentTotal.toFixed(2);
+  document.getElementById('calcResLabor').textContent = '¥' + labor.toFixed(2);
+  document.getElementById('showTotalFactor').textContent = totalFactor.toFixed(2);
+  document.getElementById('calcResTotal').textContent = '¥' + total.toFixed(2) + ' 元 (' + quantity + '件)';
+}
+
+function updateTotalFactorDisplay() {
+  const batchFactor = parseFloat(document.getElementById('calcBatchFactor').value) || 1.0;
+  const diffFactor = parseFloat(document.getElementById('calcDifficultyFactor').value) || 1.0;
+  document.getElementById('showTotalFactor').textContent = (batchFactor * diffFactor).toFixed(2);
+}
+
+function confirmPrice() {
+  // 直接重新计算总价填入表单
+  const d = loadCalcDefaults();
+  const series = document.getElementById('calcMachineSeries').value;
+  const priceMap = { A: d.machinePriceA, P: d.machinePriceP, H: d.machinePriceH };
+  const hoursMap = { A: d.totalHoursA, P: d.totalHoursP, H: d.totalHoursH };
+  const machinePrice = priceMap[series] || 0;
+  const totalHours = hoursMap[series] || 0;
+  const duration = parseFloat(document.getElementById('calcDuration').value) || 0;
+  const filamentPrice = parseFloat(document.getElementById('showFilamentPrice').value) || 0;
+  const weight = parseFloat(document.getElementById('calcWeight').value) || 0;
+  const labor = parseFloat(document.getElementById('calcLabor').value) || 0;
+  const batchFactor = parseFloat(document.getElementById('calcBatchFactor').value) || 1.0;
+  const diffFactor = parseFloat(document.getElementById('calcDifficultyFactor').value) || 1.0;
+  const machineCost = totalHours > 0 ? machinePrice / totalHours * duration : 0;
+  const electricityCost = d.machinePower * duration / 1000 * d.electricityPrice;
+  const filamentCost = weight / 1000 * filamentPrice;
+  const unitCost = machineCost + electricityCost + filamentCost;
+  const quantity = parseInt(document.getElementById('calcQuantity').value) || 1;
+  const total = (unitCost * quantity + labor) * batchFactor * diffFactor;
+  document.getElementById('price').value = total.toFixed(2);
+  closePriceCalc();
+  showToast('✅ 预估报价已填入');
+}
+
+// 绑定实时计算
+['calcDuration','calcWeight','calcLabor','calcBatchFactor','calcDifficultyFactor','showFilamentPrice','calcQuantity'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateCalcResult);
+});
+</script>
+</body>
+</html>
